@@ -4,11 +4,11 @@ ENV CI=1 \
     EXPO_NO_TELEMETRY=1 \
     ELECTRON_SKIP_BINARY_DOWNLOAD=1 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-    ONNXRUNTIME_NODE_INSTALL=skip \
-    LEFTHOOK=0
+    ONNXRUNTIME_NODE_INSTALL=skip
 WORKDIR /app
 COPY . .
-RUN node scripts/npm-retry.mjs ci
+# 镜像中没有 Git 工作目录；沿用基础镜像约定跳过安装本机 Git hooks。
+RUN npm pkg delete scripts.prepare && node scripts/npm-retry.mjs ci
 RUN npm run build:web --workspace=@getpaseo/app
 
 FROM nginx:1.28-alpine
