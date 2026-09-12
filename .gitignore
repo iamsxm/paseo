@@ -71,6 +71,9 @@ CLAUDE.local.md
 **/.tanstack/
 
 # Local agent/tooling artifacts (do not commit)
+.codex/
+**/pb_data/
+**/pb_backups/
 PLAN.md
 .valknut/
 valknut-report.html/

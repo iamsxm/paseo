@@ -2,6 +2,31 @@ import { en, type TranslationResources } from "./en";
 import { pluginSettings } from "./plugin-settings";
 
 export const zhCN: TranslationResources = {
+  hostSync: {
+    title: "VPS 连接同步",
+    endpoint: "同步后台地址",
+    email: "邮箱",
+    password: "密码",
+    signIn: "登录并同步",
+    signOut: "退出登录",
+    syncNow: "立即同步",
+    importNotice: "使用自建后台中创建的账号。登录后会将本机 relay 主机与账号中的主机合并。",
+    deleteNotice:
+      "主机名称和 relay 连接每 10 秒同步一次。删除已同步的 relay 主机也会从其他设备移除。退出登录会移除本机的账号主机，未上传的修改保留到下次登录。",
+    signInError: "登录失败，请检查后台地址、账号和密码。",
+    signOutError: "退出状态保存失败，请重试。",
+    pending: "待同步的主机修改：{{count}}",
+    conflicts: "并发修改已采用后台版本：{{count}}",
+    status: {
+      loading: "正在读取同步设置…",
+      signedOut: "尚未登录",
+      ready: "已开启同步",
+      syncing: "正在同步…",
+      offline: "同步暂不可用，本机连接仍可使用；正在自动重试。",
+      expired: "同步登录已过期，请退出后重新登录。",
+      error: "无法读取或保存同步设置。",
+    },
+  },
   common: {
     back: "返回",
     loading: "加载中...",

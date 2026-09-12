@@ -2,6 +2,7 @@ import { en, type TranslationResources } from "./en";
 import { pluginSettings } from "./plugin-settings";
 
 export const ar: TranslationResources = {
+  hostSync: en.hostSync,
   common: {
     back: "خلف",
     loading: "تحميل...",

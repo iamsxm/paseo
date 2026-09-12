@@ -87,6 +87,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/component
 import { DesktopPermissionsSection } from "@/desktop/components/desktop-permissions-section";
 import { DesktopNotificationsSection } from "@/desktop/components/desktop-notifications-section";
 import { BrowserDataSection } from "@/desktop/browser/settings/browser-data-section";
+import { HostSyncSettingsSection } from "@/host-sync/settings-section";
 import { IntegrationsSection } from "@/desktop/components/integrations-section";
 import { isElectronRuntime } from "@/desktop/host";
 import { useDesktopAppUpdater } from "@/desktop/updates/use-desktop-app-updater";
@@ -1532,6 +1533,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
                   handleLanguageChange={handleLanguageChange}
                   handleTerminalScrollbackLinesChange={handleTerminalScrollbackLinesChange}
                 />
+                <HostSyncSettingsSection />
                 {isDesktopApp ? <BrowserDataSection /> : null}
               </>
             );

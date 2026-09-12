@@ -2,6 +2,7 @@ import { en, type TranslationResources } from "./en";
 import { pluginSettings } from "./plugin-settings";
 
 export const ru: TranslationResources = {
+  hostSync: en.hostSync,
   common: {
     back: "Назад",
     loading: "Загрузка...",

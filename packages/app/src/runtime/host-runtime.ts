@@ -1,5 +1,6 @@
 import { useSyncExternalStore, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { mergeRelayHosts, type HostRecord } from "@/host-sync/model";
 import equal from "fast-deep-equal/es6";
 import {
   DaemonClient,
@@ -1884,6 +1885,13 @@ export class HostRuntimeStore {
 
   async renameHost(serverId: string, label: string): Promise<void> {
     await this.updateHost(serverId, (host) => ({ ...host, label }));
+  }
+
+  applySyncedRelayHosts(records: HostRecord[]): Promise<void> {
+    const hosts = mergeRelayHosts(this.hosts, records);
+    if (hosts === this.hosts) return Promise.resolve();
+    this.setHostsAndSync(hosts);
+    return this.persistHosts();
   }
 
   async setHostColor(serverId: string, color: HostColor): Promise<void> {

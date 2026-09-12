@@ -1,4 +1,5 @@
 import "@/styles/unistyles";
+import { getHostSyncService } from "@/host-sync/runtime";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { PortalProvider } from "@gorhom/portal";
 import * as Linking from "expo-linking";
@@ -369,6 +370,18 @@ async function shouldStartBuiltInDaemon(): Promise<boolean> {
 }
 
 function HostRuntimeBootstrapProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const sync = getHostSyncService();
+    void sync.start();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void sync.sync();
+    });
+    return () => {
+      subscription.remove();
+      sync.stop();
+    };
+  }, []);
+
   useEffect(() => {
     const store = getHostRuntimeStore();
     return bindHostRuntimeAppState(store, AppState);

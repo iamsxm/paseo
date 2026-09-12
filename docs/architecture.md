@@ -175,6 +175,8 @@ The production relay server lives in [getpaseo/paseo-relay](https://github.com/g
 
 See [SECURITY.md](../SECURITY.md) for the full threat model.
 
+客户端可选择连接自建主机目录后台，跨设备同步 relay 主机配置。目录同步与 relay 传输独立，复用现有主机运行时建立连接。部署和一致性规则见 [VPS 连接同步](host-sync.md)。
+
 ### Paseo Hub
 
 The optional Hub relationship is daemon-outbound and does not use the relay. Its connection,

@@ -1,4 +1,8 @@
 .git
+.codex
+**/.codex
+**/pb_data
+**/pb_backups
 .debug.conversations
 .debug
 .dev

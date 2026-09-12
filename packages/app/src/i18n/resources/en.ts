@@ -1,4 +1,30 @@
 export const en = {
+  hostSync: {
+    title: "VPS connection sync",
+    endpoint: "Sync service URL",
+    email: "Email",
+    password: "Password",
+    signIn: "Sign in and sync",
+    signOut: "Sign out",
+    syncNow: "Sync now",
+    importNotice:
+      "Use an account created in your self-hosted backend. Signing in merges this device's relay hosts with your account.",
+    deleteNotice:
+      "Host names and relay connections sync every 10 seconds. Removing a synced relay host also removes it on your other devices. Signing out removes account hosts here and preserves pending changes for your next sign-in.",
+    signInError: "Could not sign in. Check the service URL, account, and password.",
+    signOutError: "Could not save the sign-out state. Please retry.",
+    pending: "Pending host changes: {{count}}",
+    conflicts: "Concurrent changes resolved using the server version: {{count}}",
+    status: {
+      loading: "Loading sync settings…",
+      signedOut: "Not signed in",
+      ready: "Sync enabled",
+      syncing: "Syncing…",
+      offline: "Sync unavailable; local connections remain usable. Retrying automatically.",
+      expired: "Your sync session expired. Sign out and sign in again.",
+      error: "Could not read or save sync settings.",
+    },
+  },
   common: {
     back: "Back",
     loading: "Loading...",
