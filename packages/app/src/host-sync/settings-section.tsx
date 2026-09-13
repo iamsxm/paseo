@@ -23,6 +23,9 @@ function SignInForm({
   const { t } = useTranslation();
   const compact = useIsCompactFormFactor();
   const [form] = useState(() => openSignInForm(endpoint));
+  const [oauthStatus, setOauthStatus] = useState<
+    "idle" | "submitting" | "error"
+  >("idle");
   const state = useSyncExternalStore(
     form.subscribe,
     form.getState,
@@ -46,6 +49,13 @@ function SignInForm({
   const submit = useCallback(() => {
     void form.submit((fields) => service.signIn(fields));
   }, [form, service]);
+  const signInWithGitHub = useCallback(() => {
+    setOauthStatus("submitting");
+    void service
+      .signInWithGitHub(state.endpoint)
+      .then(() => setOauthStatus("idle"))
+      .catch(() => setOauthStatus("error"));
+  }, [service, state.endpoint]);
   return (
     <View style={styles.form}>
       <Field label={t("hostSync.endpoint")}>
@@ -97,6 +107,19 @@ function SignInForm({
       >
         {t("hostSync.signIn")}
       </Button>
+      <Button
+        testID="host-sync-github-sign-in"
+        size={size}
+        variant="secondary"
+        loading={oauthStatus === "submitting"}
+        disabled={!editing || oauthStatus === "submitting"}
+        onPress={signInWithGitHub}
+      >
+        GitHub · {t("hostSync.signIn")}
+      </Button>
+      {oauthStatus === "error" ? (
+        <Text style={settingsStyles.rowError}>{t("hostSync.signInError")}</Text>
+      ) : null}
     </View>
   );
 }

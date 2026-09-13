@@ -72,6 +72,15 @@ GitHub Actions 仅使用运行时提供的 `GITHUB_TOKEN` 推送镜像。不要�
 
 ## 使用客户端
 
+### GitHub 登录
+
+Web 客户端支持通过 PocketBase 官方 OAuth2 流程使用 GitHub 登录。先在 GitHub 创建 OAuth App：
+
+- Homepage URL：`https://paseo.imsxm.com`
+- Authorization callback URL：`https://paseo.imsxm.com/api/oauth2-redirect`
+
+然后进入 PocketBase 管理页，在 `sync_users` 集合的 OAuth2 配置中启用 GitHub，并填入 OAuth App 的 Client ID 和 Client Secret。Secret 只保存在 PocketBase 数据库中，不写入源码、镜像或 GitHub Actions。首次 GitHub 登录会自动创建对应的 `sync_users` 记录；后续设备使用同一 GitHub 账号会进入同一个同步目录。
+
 必须使用包含此修改的 Paseo 客户端。官方 `app.paseo.sh` 不会因为部署后台自动出现同步入口。
 
 1. 构建并运行本分支 Web 或桌面客户端。

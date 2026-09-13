@@ -209,6 +209,27 @@ export class HostSyncService {
         signal: abort.signal,
       })
       .finally(() => clearTimeout(timeout));
+    await this.acceptAuthentication(endpoint, client, result);
+  }
+
+  // 必须在点击事件中立即启动官方 OAuth 弹窗，避免 Safari 将其识别为异步弹窗并拦截。
+  signInWithGitHub(inputEndpoint: string): Promise<void> {
+    if (this.saved.session) {
+      return Promise.reject(new Error("Sign out before changing accounts"));
+    }
+    const endpoint = normalizeSyncEndpoint(inputEndpoint);
+    const client = new PocketBase(endpoint, new BaseAuthStore());
+    return client
+      .collection("sync_users")
+      .authWithOAuth2({ provider: "github" })
+      .then((result) => this.acceptAuthentication(endpoint, client, result));
+  }
+
+  private async acceptAuthentication(
+    endpoint: string,
+    client: PocketBase,
+    result: { token: string; record: unknown }
+  ): Promise<void> {
     const user = UserSchema.parse(result.record);
     this.generation += 1;
     this.saved.endpoint = endpoint;
