@@ -32,6 +32,7 @@
     "access": "public"
   },
   "scripts": {
+    "start:standalone": "node dist/standalone-server.js",
     "clean": "node ../../scripts/clean-package-dist.mjs",
     "build": "tsc -p tsconfig.json --incremental false",
     "build:clean": "npm run clean && npm run build",
