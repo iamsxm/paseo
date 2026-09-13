@@ -120,6 +120,20 @@ paseo.example.com {
 
 当前登录方式是自建账号的邮箱与密码。GitHub OAuth 不属于本次实现；如以后添加，可继续复用同一个主机目录。
 
+## Windows 桌面客户端
+
+日期：2026-09-13；执行者：Codex。
+
+Fork 的 `Host Sync Desktop` 工作流复用 `npm run build:desktop` 和打包后冒烟测试，生成 Windows x64 安装程序与 ZIP 包。当前桌面发行版本为 0.8.1；daemon 和协议仍使用当前源码的版本。此版本号用于 fork 的桌面发行，不发布 npm 包。
+
+在 fork 的 Actions 页面手动运行该工作流，成功后下载 `host-sync-desktop-windows-x64` 产物。安装程序用于日常使用，ZIP 解压后可直接启动 `Paseo.exe`。构建未配置 Windows 代码签名证书，因此系统可能显示未知发布者。
+
+打开“设置 → 通用 → VPS 连接同步”，输入自建后台地址与普通账号。三台电脑使用同一账号；首次登录会导入已登记的 relay 主机。同步状态和真实 VPS 连接状态需要分别确认。
+
+`electron-builder` 的发布目标在构建时指向 fork 所属账号，更新使用 `latest` 通道。发布 GitHub Release 时一起上传安装程序、ZIP、blockmap 和 `latest.yml`，保持更新清单与二进制来自同一次构建。不得将更新源改回上游，否则同步功能可能被官方包替换。
+
+本地验收使用独立 `PASEO_ELECTRON_USER_DATA_DIR` 与 `PASEO_HOME`；不要复用用户正在运行的 daemon 或生产数据。三个隔离客户端状态的测试不能表述为三台物理电脑实测。
+
 ## 本地验证
 
 下载官方 PocketBase 0.40.3 本机可执行文件后，把其路径放入 `PASEO_HOST_SYNC_TEST_BINARY`，运行指定测试。未设置时测试尝试 PATH 中的 `pocketbase`，不会跳过后台验证。
