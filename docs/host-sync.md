@@ -150,3 +150,13 @@ npm run lint -- packages/app/src/host-sync docker/host-sync/host-sync.test.ts
 集成测试会自动启动真实 PocketBase，创建临时数据库和测试账号，验证三台设备、并发、重试、删除墓碑与重启登录恢复；结束后关闭实例并删除临时数据。测试中的主机是虚构数据，不连接用户 VPS。
 
 参考：[PocketBase 部署](https://pocketbase.io/docs/going-to-production/)、[JavaScript SDK](https://github.com/pocketbase/js-sdk)、[JS 路由](https://pocketbase.io/docs/js-routing/)。
+
+## 统一登录入口与 Windows 发布（2026-09-13，Codex）
+
+自建 Web 镜像启用 `EXPO_PUBLIC_HOST_SYNC_REQUIRED=true`，默认同步地址由 `EXPO_PUBLIC_HOST_SYNC_ENDPOINT` 指定。未登录或本次启动尚未完成同步时，只呈现现有同步登录表单。恢复账号后必须成功请求同步后台才显示应用；退出移除当前账号同步主机与本地 checkpoint。未提交的离线修改会随退出清除，请先同步再退出。
+
+入口只控制客户端页面，数据访问仍由 PocketBase 账号权限校验。不要用入口遮挡代替 API 鉴权。生产部署可在入口验收通过后撤掉临时 Basic Auth，避免用户需要两套密码。后台管理页可保留独立访问保护。
+
+Windows 专用工作流支持 `fork-windows-v*` 标签，成功构建后上传 exe、zip、blockmap 和 latest.yml 到同名 Release。该标签前缀避免触发官方全平台发布任务。当前桌面包版本为 0.8.1，安装包未签名。手动 workflow_dispatch 仅生成 Actions artifacts。
+
+Sync upstream 每六小时把官方 main 合并到 fork 当前默认开发分支 codex/host-sync；冲突会使任务失败且不推送，不覆盖定制代码。自动合并不等于自动部署。默认分支改变时应同步修改工作流目标。
