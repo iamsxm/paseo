@@ -31,7 +31,7 @@ jobs:
         env:
           PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
           FORK_OWNER: ${{ github.repository_owner }}
-        run: npm run build:desktop -- --publish never --win --x64 "-c.publish.owner=$env:FORK_OWNER" -c.publish.repo=paseo -c.publish.channel=latest -c.publish.releaseType=release
+        run: npm run build:desktop -- --publish never --win --x64 "-c.publish.owner=$env:FORK_OWNER" "-c.publish.repo=paseo" "-c.publish.channel=latest" "-c.publish.releaseType=release"
       - name: Upload release files
         uses: actions/upload-artifact@v4
         with:
