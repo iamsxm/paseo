@@ -3,6 +3,8 @@ import PocketBase, {
   ClientResponseError,
   isTokenExpired,
 } from "pocketbase";
+import { Linking } from "react-native";
+import { isWeb } from "@/constants/platform";
 import { z } from "zod";
 import type { HostProfile } from "@/types/host-connection";
 import {
@@ -62,6 +64,7 @@ export interface SyncSnapshot {
   pending: number;
   conflicts: number;
   lastSyncedAt: number | null;
+  githubLinked: boolean;
 }
 
 export function normalizeSyncEndpoint(value: string): string {
@@ -88,6 +91,7 @@ export class HostSyncService {
     pending: 0,
     conflicts: 0,
     lastSyncedAt: null,
+    githubLinked: false,
   };
   private listeners = new Set<() => void>();
   private client: PocketBase | null = null;
@@ -179,7 +183,8 @@ export class HostSyncService {
       if (raw) this.saved = SavedSchema.parse(JSON.parse(raw));
       if (this.saved.session)
         this.client = this.createClient(this.saved.session);
-      this.publish({ status: this.client ? "ready" : "signedOut" });
+      this.publish({ status: this.client ? "ready" : "signedOut", githubLinked: false });
+      if (this.client && this.saved.session) void this.refreshAccountLinks().catch(() => undefined);
     } catch {
       this.publish({ status: "error" });
     }
@@ -221,7 +226,10 @@ export class HostSyncService {
     const client = new PocketBase(endpoint, new BaseAuthStore());
     return client
       .collection("sync_users")
-      .authWithOAuth2({ provider: "github" })
+      .authWithOAuth2({
+        provider: "github",
+        ...(isWeb ? {} : { urlCallback: async (url: string): Promise<void> => { await Linking.openURL(url); } }),
+      })
       .then((result) => this.acceptAuthentication(endpoint, client, result));
   }
 
@@ -266,7 +274,51 @@ export class HostSyncService {
     this.saved.session = null;
     await this.apply(removals);
     await this.persist();
-    this.publish({ status: "signedOut", conflicts: 0, lastSyncedAt: null });
+    this.publish({ status: "signedOut", conflicts: 0, lastSyncedAt: null, githubLinked: false });
+  }
+
+  async refreshAccountLinks(): Promise<void> {
+    const session = this.saved.session;
+    const client = this.client;
+    if (!session || !client) throw new Error("Not signed in");
+    const links = await client.collection("sync_users").listExternalAuths(session.user.id);
+    this.publish({ githubLinked: links.some((link) => link.provider === "github") });
+  }
+
+  async changePassword(input: { currentPassword: string; password: string; passwordConfirm: string }): Promise<void> {
+    const session = this.saved.session;
+    const client = this.client;
+    if (!session || !client) throw new Error("Not signed in");
+    const record = await client.collection("sync_users").update(session.user.id, {
+      oldPassword: input.currentPassword,
+      password: input.password,
+      passwordConfirm: input.passwordConfirm,
+    });
+    const refreshed = await client.collection("sync_users").authRefresh();
+    session.token = refreshed.token;
+    session.user = UserSchema.parse(record);
+    await this.persist();
+    this.publish({ status: "ready" });
+  }
+
+  async linkGitHub(): Promise<void> {
+    const session = this.saved.session;
+    const client = this.client;
+    if (!session || !client) throw new Error("Not signed in");
+    const result = await client.collection("sync_users").authWithOAuth2({
+      provider: "github",
+      ...(isWeb ? {} : { urlCallback: async (url: string): Promise<void> => { await Linking.openURL(url); } }),
+    });
+    await this.acceptAuthentication(session.endpoint, client, result);
+    await this.refreshAccountLinks();
+  }
+
+  async unlinkGitHub(): Promise<void> {
+    const session = this.saved.session;
+    const client = this.client;
+    if (!session || !client) throw new Error("Not signed in");
+    await client.collection("sync_users").unlinkExternalAuth(session.user.id, "github");
+    await this.refreshAccountLinks();
   }
 
   private onHostsChanged(): void {

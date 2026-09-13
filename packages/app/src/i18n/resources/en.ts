@@ -1,5 +1,8 @@
 export const en = {
   hostSync: {
+    account: {
+      title: "Account", description: "Manage your Paseo sync account and linked providers.", currentPassword: "Current password", newPassword: "New password", confirmPassword: "Confirm new password", changePassword: "Change password", passwordChanged: "Password changed.", passwordError: "Could not change password.", linkGitHub: "Bind GitHub", unlinkGitHub: "Unbind GitHub", githubLinkedLabel: "GitHub is bound", githubLinked: "GitHub bound.", githubUnlinked: "GitHub unbound.", githubError: "Could not update GitHub binding.",
+    },
     title: "VPS connection sync",
     endpoint: "Sync service URL",
     email: "Email",

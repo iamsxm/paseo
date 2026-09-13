@@ -3,6 +3,9 @@ import { pluginSettings } from "./plugin-settings";
 
 export const zhCN: TranslationResources = {
   hostSync: {
+    account: {
+      title: "账号管理", description: "管理 Paseo 同步账号和已绑定的登录方式。", currentPassword: "当前密码", newPassword: "新密码", confirmPassword: "确认新密码", changePassword: "修改密码", passwordChanged: "密码已修改。", passwordError: "修改密码失败。", linkGitHub: "绑定 GitHub", unlinkGitHub: "解绑 GitHub", githubLinkedLabel: "GitHub 已绑定", githubLinked: "GitHub 已绑定。", githubUnlinked: "GitHub 已解绑。", githubError: "更新 GitHub 绑定失败。",
+    },
     title: "VPS 连接同步",
     endpoint: "同步后台地址",
     email: "邮箱",

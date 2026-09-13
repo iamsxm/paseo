@@ -88,6 +88,7 @@ import { DesktopPermissionsSection } from "@/desktop/components/desktop-permissi
 import { DesktopNotificationsSection } from "@/desktop/components/desktop-notifications-section";
 import { BrowserDataSection } from "@/desktop/browser/settings/browser-data-section";
 import { HostSyncSettingsSection } from "@/host-sync/settings-section";
+import { HostSyncAccountSection } from "@/host-sync/account-section";
 import { IntegrationsSection } from "@/desktop/components/integrations-section";
 import { isElectronRuntime } from "@/desktop/host";
 import { useDesktopAppUpdater } from "@/desktop/updates/use-desktop-app-updater";
@@ -152,6 +153,7 @@ interface SidebarSectionItem {
 
 const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
   { id: "general", labelKey: "settings.sections.general", icon: Settings },
+  { id: "account", labelKey: "hostSync.account.title", icon: Settings },
   { id: "appearance", labelKey: "settings.sections.appearance", icon: Palette },
   {
     id: "layout",
@@ -1539,6 +1541,8 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
             );
           case "appearance":
             return <AppearanceSection />;
+          case "account":
+            return <HostSyncAccountSection />;
           case "editor":
             return isWeb ? <EditorSection /> : null;
           case "shortcuts":
