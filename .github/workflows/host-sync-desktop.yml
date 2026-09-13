@@ -1,0 +1,52 @@
+name: Host Sync Desktop
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: host-sync-desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      ONNXRUNTIME_NODE_INSTALL: skip
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      PASEO_DESKTOP_SMOKE: "1"
+      PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: node scripts/npm-retry.mjs ci
+      - name: Set fork version
+        run: npm pkg set version=0.8.0-hostsync.1 --workspace=@getpaseo/desktop
+      - name: Build Windows x64 installer and zip
+        env:
+          FORK_OWNER: ${{ github.repository_owner }}
+        run: npm run build:desktop -- -- --publish never --win --x64 "-c.publish.owner=$env:FORK_OWNER" -c.publish.repo=paseo -c.publish.channel=hostsync -c.publish.releaseType=prerelease
+      - name: Upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-sync-desktop-windows-x64
+          path: |
+            packages/desktop/release/*.exe
+            packages/desktop/release/*.zip
+            packages/desktop/release/*.blockmap
+            packages/desktop/release/hostsync.yml
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-sync-desktop-diagnostics
+          path: ${{ runner.temp }}/desktop-smoke
+          if-no-files-found: ignore
