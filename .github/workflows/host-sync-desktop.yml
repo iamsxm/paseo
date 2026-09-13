@@ -2,9 +2,11 @@ name: Host Sync Desktop
 
 on:
   workflow_dispatch:
+  push:
+    tags: ["fork-windows-v*"]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: host-sync-desktop-${{ github.ref }}
@@ -17,6 +19,8 @@ jobs:
       ONNXRUNTIME_NODE_INSTALL: skip
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
       PASEO_DESKTOP_SMOKE: "1"
+      EXPO_PUBLIC_HOST_SYNC_REQUIRED: "true"
+      EXPO_PUBLIC_HOST_SYNC_ENDPOINT: https://paseo.imsxm.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,3 +54,18 @@ jobs:
           name: host-sync-desktop-diagnostics
           path: ${{ runner.temp }}/desktop-smoke
           if-no-files-found: ignore
+      - name: Publish Windows release
+        if: startsWith(github.ref, 'refs/tags/fork-windows-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release view $env:GITHUB_REF_NAME --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:GITHUB_REF_NAME --verify-tag --repo $env:GITHUB_REPOSITORY --title "Paseo Windows $env:GITHUB_REF_NAME" --notes "Windows x64 build with account login and VPS configuration synchronization. Unsigned installer."
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          $files = Get-ChildItem packages/desktop/release/* -Include *.exe,*.zip,*.blockmap,latest.yml
+          if (!$files) { throw "Release files missing" }
+          gh release upload $env:GITHUB_REF_NAME @($files.FullName) --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

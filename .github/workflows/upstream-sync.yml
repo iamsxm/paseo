@@ -3,8 +3,6 @@ on:
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
-  push:
-    branches: [master]
 permissions:
   contents: write
 jobs:
@@ -19,6 +17,8 @@ jobs:
         run: |
           git remote add upstream https://github.com/getpaseo/paseo.git || true
           git fetch upstream --prune
-          git checkout master
-          git merge --no-edit upstream/master
-          git push origin master
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout codex/host-sync
+          git merge --no-edit upstream/main
+          git push origin HEAD:codex/host-sync

@@ -9,6 +9,8 @@ WORKDIR /app
 COPY . .
 # 镜像中没有 Git 工作目录；沿用基础镜像约定跳过安装本机 Git hooks。
 RUN npm pkg delete scripts.prepare && node scripts/npm-retry.mjs ci
+ENV EXPO_PUBLIC_HOST_SYNC_REQUIRED=true \
+    EXPO_PUBLIC_HOST_SYNC_ENDPOINT=https://paseo.imsxm.com
 RUN npm run build:web --workspace=@getpaseo/app
 
 FROM nginx:1.28-alpine

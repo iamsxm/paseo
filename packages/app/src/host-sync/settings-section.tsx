@@ -13,17 +13,36 @@ import { getHostSyncService } from "./runtime";
 import { openSignInForm } from "./sign-in-form";
 import type { HostSyncService } from "./service";
 
-function SignInForm({ service, endpoint }: { service: HostSyncService; endpoint: string }) {
+function SignInForm({
+  service,
+  endpoint,
+}: {
+  service: HostSyncService;
+  endpoint: string;
+}) {
   const { t } = useTranslation();
   const compact = useIsCompactFormFactor();
   const [form] = useState(() => openSignInForm(endpoint));
-  const state = useSyncExternalStore(form.subscribe, form.getState, form.getState);
+  const state = useSyncExternalStore(
+    form.subscribe,
+    form.getState,
+    form.getState
+  );
   useEffect(() => () => form.close(), [form]);
   const size = compact ? "md" : "sm";
   const editing = state.status !== "submitting";
-  const setEndpoint = useCallback((text: string) => form.set("endpoint", text), [form]);
-  const setEmail = useCallback((text: string) => form.set("email", text), [form]);
-  const setPassword = useCallback((text: string) => form.set("password", text), [form]);
+  const setEndpoint = useCallback(
+    (text: string) => form.set("endpoint", text),
+    [form]
+  );
+  const setEmail = useCallback(
+    (text: string) => form.set("email", text),
+    [form]
+  );
+  const setPassword = useCallback(
+    (text: string) => form.set("password", text),
+    [form]
+  );
   const submit = useCallback(() => {
     void form.submit((fields) => service.signIn(fields));
   }, [form, service]);
@@ -88,7 +107,7 @@ export function HostSyncSettingsSection() {
   const snapshot = useSyncExternalStore(
     service.subscribe,
     service.getSnapshot,
-    service.getSnapshot,
+    service.getSnapshot
   );
   const signOut = useMutation({ mutationFn: () => service.signOut() });
   const syncNow = useCallback(() => {
@@ -102,7 +121,9 @@ export function HostSyncSettingsSection() {
     <SettingsSection title={t("hostSync.title")}>
       <SettingsCard testID="host-sync-settings">
         <View style={styles.form}>
-          <Text style={settingsStyles.rowTitle}>{t(`hostSync.status.${snapshot.status}`)}</Text>
+          <Text style={settingsStyles.rowTitle}>
+            {t(`hostSync.status.${snapshot.status}`)}
+          </Text>
           {loggedIn ? (
             <Text style={settingsStyles.rowHint}>
               {snapshot.email}
@@ -121,10 +142,14 @@ export function HostSyncSettingsSection() {
             </Text>
           ) : null}
           {loggedIn ? (
-            <Text style={settingsStyles.rowHint}>{t("hostSync.deleteNotice")}</Text>
+            <Text style={settingsStyles.rowHint}>
+              {t("hostSync.deleteNotice")}
+            </Text>
           ) : null}
           {signOut.isError ? (
-            <Text style={settingsStyles.rowError}>{t("hostSync.signOutError")}</Text>
+            <Text style={settingsStyles.rowError}>
+              {t("hostSync.signOutError")}
+            </Text>
           ) : null}
           {loggedIn ? (
             <View style={styles.actions}>
@@ -150,7 +175,15 @@ export function HostSyncSettingsSection() {
           ) : null}
         </View>
         {!loggedIn && !waiting ? (
-          <SignInForm key={snapshot.endpoint} endpoint={snapshot.endpoint} service={service} />
+          <SignInForm
+            key={snapshot.endpoint}
+            endpoint={
+              snapshot.endpoint ||
+              process.env.EXPO_PUBLIC_HOST_SYNC_ENDPOINT ||
+              ""
+            }
+            service={service}
+          />
         ) : null}
       </SettingsCard>
     </SettingsSection>

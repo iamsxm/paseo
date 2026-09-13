@@ -1,4 +1,8 @@
-import PocketBase, { BaseAuthStore, ClientResponseError, isTokenExpired } from "pocketbase";
+import PocketBase, {
+  BaseAuthStore,
+  ClientResponseError,
+  isTokenExpired,
+} from "pocketbase";
 import { z } from "zod";
 import type { HostProfile } from "@/types/host-connection";
 import {
@@ -21,7 +25,11 @@ const UserSchema = z.object({
   collectionId: z.string(),
   collectionName: z.literal("sync_users"),
 });
-const SessionSchema = z.object({ endpoint: z.string().url(), token: z.string(), user: UserSchema });
+const SessionSchema = z.object({
+  endpoint: z.string().url(),
+  token: z.string(),
+  user: UserSchema,
+});
 const SavedSchema = z.object({
   endpoint: z.string(),
   session: SessionSchema.nullable(),
@@ -41,7 +49,14 @@ export interface SyncHostRegistry {
   applySyncedRelayHosts(records: HostRecord[]): Promise<void>;
 }
 export interface SyncSnapshot {
-  status: "loading" | "signedOut" | "ready" | "syncing" | "offline" | "expired" | "error";
+  status:
+    | "loading"
+    | "signedOut"
+    | "ready"
+    | "syncing"
+    | "offline"
+    | "expired"
+    | "error";
   endpoint: string;
   email: string | null;
   pending: number;
@@ -88,7 +103,7 @@ export class HostSyncService {
 
   constructor(
     private readonly storage: SyncStorage,
-    private readonly registry: SyncHostRegistry,
+    private readonly registry: SyncHostRegistry
   ) {}
 
   getSnapshot = (): SyncSnapshot => this.snapshot;
@@ -139,7 +154,9 @@ export class HostSyncService {
     this.started ??= this.restore();
     await this.started;
     if (!this.active || this.timer) return;
-    this.unsubscribe = this.registry.subscribeHostList(() => this.onHostsChanged());
+    this.unsubscribe = this.registry.subscribeHostList(() =>
+      this.onHostsChanged()
+    );
     this.timer = setInterval(() => {
       void this.sync();
     }, 10_000);
@@ -160,7 +177,8 @@ export class HostSyncService {
       await this.registry.boot();
       const raw = await this.storage.getItem(STORAGE_KEY);
       if (raw) this.saved = SavedSchema.parse(JSON.parse(raw));
-      if (this.saved.session) this.client = this.createClient(this.saved.session);
+      if (this.saved.session)
+        this.client = this.createClient(this.saved.session);
       this.publish({ status: this.client ? "ready" : "signedOut" });
     } catch {
       this.publish({ status: "error" });
@@ -173,16 +191,23 @@ export class HostSyncService {
     return new PocketBase(session.endpoint, auth);
   }
 
-  async signIn(input: { endpoint: string; email: string; password: string }): Promise<void> {
+  async signIn(input: {
+    endpoint: string;
+    email: string;
+    password: string;
+  }): Promise<void> {
     await this.start();
-    if (this.saved.session) throw new Error("Sign out before changing accounts");
+    if (this.saved.session)
+      throw new Error("Sign out before changing accounts");
     const endpoint = normalizeSyncEndpoint(input.endpoint);
     const client = new PocketBase(endpoint, new BaseAuthStore());
     const abort = new AbortController();
     const timeout = setTimeout(() => abort.abort(), 15_000);
     const result = await client
       .collection("sync_users")
-      .authWithPassword(input.email.trim(), input.password, { signal: abort.signal })
+      .authWithPassword(input.email.trim(), input.password, {
+        signal: abort.signal,
+      })
       .finally(() => clearTimeout(timeout));
     const user = UserSchema.parse(result.record);
     this.generation += 1;
@@ -215,6 +240,8 @@ export class HostSyncService {
     }));
     this.client?.cancelAllRequests();
     this.client = null;
+    if (this.saved.session)
+      delete this.saved.accounts[this.accountKey(this.saved.session)];
     this.saved.session = null;
     await this.apply(removals);
     await this.persist();
@@ -247,7 +274,8 @@ export class HostSyncService {
   }
 
   sync(): Promise<void> {
-    if (!this.client || !this.saved.session || !this.active) return Promise.resolve();
+    if (!this.client || !this.saved.session || !this.active)
+      return Promise.resolve();
     if (this.inFlight) {
       this.requested = true;
       return this.inFlight;
@@ -301,15 +329,20 @@ export class HostSyncService {
           body: { changes: sent },
           signal: abort.signal,
           requestKey: null,
-        }),
+        })
       );
       if (generation !== this.generation) return;
       checkpoint = this.checkpoint();
       if (!checkpoint.initialized) {
-        const known = new Set(response.records.map((record) => record.serverId));
+        const known = new Set(
+          response.records.map((record) => record.serverId)
+        );
         const pending: HostChange[] = [];
-        for (const [serverId, profile] of projectRelayHosts(this.registry.getHosts())) {
-          if (!known.has(serverId)) pending.push({ serverId, profile, baseRevision: 0 });
+        for (const [serverId, profile] of projectRelayHosts(
+          this.registry.getHosts()
+        )) {
+          if (!known.has(serverId))
+            pending.push({ serverId, profile, baseRevision: 0 });
         }
         checkpoint = { records: response.records, pending, initialized: true };
       } else {
@@ -328,7 +361,8 @@ export class HostSyncService {
     } catch (error) {
       if (generation !== this.generation) return;
       const expired =
-        error instanceof ClientResponseError && (error.status === 401 || error.status === 403);
+        error instanceof ClientResponseError &&
+        (error.status === 401 || error.status === 403);
       this.publish({ status: expired ? "expired" : "offline" });
     } finally {
       clearTimeout(timeout);
