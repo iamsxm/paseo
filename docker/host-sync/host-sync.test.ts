@@ -275,6 +275,9 @@ describe("real self-hosted PocketBase host sync", () => {
     await settled(a.service);
     await a.service.signOut();
     expect(a.registry.hosts).toEqual([]);
+    const signedOut = JSON.parse((await a.storage.getItem("@paseo:host-sync:v1"))!);
+    expect(signedOut.session).toBeNull();
+    expect(signedOut.accounts).toEqual({});
     await a.service.signIn({ endpoint, email: "other@example.test", password });
     await settled(a.service);
     expect(a.registry.hosts).toEqual([]);
