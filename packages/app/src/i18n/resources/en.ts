@@ -10,7 +10,7 @@ export const en = {
     importNotice:
       "Use an account created in your self-hosted backend. Signing in merges this device's relay hosts with your account.",
     deleteNotice:
-      "Host names and relay connections sync every 10 seconds. Removing a synced relay host also removes it on your other devices. Signing out removes account hosts here and preserves pending changes for your next sign-in.",
+      "Host names and relay connections sync every 10 seconds. Removing a synced relay host also removes it on your other devices. Signing out removes account hosts and cached changes from this device. Sync pending changes before signing out.",
     signInError: "Could not sign in. Check the service URL, account, and password.",
     signOutError: "Could not save the sign-out state. Please retry.",
     pending: "Pending host changes: {{count}}",

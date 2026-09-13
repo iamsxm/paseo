@@ -12,7 +12,7 @@ export const zhCN: TranslationResources = {
     syncNow: "立即同步",
     importNotice: "使用自建后台中创建的账号。登录后会将本机 relay 主机与账号中的主机合并。",
     deleteNotice:
-      "主机名称和 relay 连接每 10 秒同步一次。删除已同步的 relay 主机也会从其他设备移除。退出登录会移除本机的账号主机，未上传的修改保留到下次登录。",
+      "主机名称和 relay 连接每 10 秒同步一次。删除已同步的 relay 主机也会从其他设备移除。退出登录会清除本机的账号主机与同步缓存，请先同步尚未上传的修改。",
     signInError: "登录失败，请检查后台地址、账号和密码。",
     signOutError: "退出状态保存失败，请重试。",
     pending: "待同步的主机修改：{{count}}",
