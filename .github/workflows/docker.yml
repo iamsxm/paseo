@@ -38,6 +38,7 @@ env:
 
 jobs:
   setup:
+    if: github.repository == 'getpaseo/paseo'
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.values.outputs.image }}

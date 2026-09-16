@@ -19,6 +19,7 @@ env:
 
 jobs:
   changes:
+    if: github.repository == 'getpaseo/paseo'
     name: changes
     runs-on: ubuntu-latest
     permissions:
