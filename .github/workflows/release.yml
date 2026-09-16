@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.8.2)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  init-release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.vars.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve Release Tag
+        id: vars
+        run: |
+          TAG="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure GitHub Release exists
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: "Release ${{ steps.vars.outputs.tag }}"
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  build-desktop-windows:
+    needs: init-release
+    runs-on: windows-latest
+    env:
+      ONNXRUNTIME_NODE_INSTALL: skip
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      PASEO_DESKTOP_SMOKE: "1"
+      EXPO_PUBLIC_HOST_SYNC_REQUIRED: "true"
+      EXPO_PUBLIC_HOST_SYNC_ENDPOINT: https://paseo.imsxm.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: node scripts/npm-retry.mjs ci
+
+      - name: Set release version
+        shell: bash
+        run: |
+          CLEAN_VER="${{ needs.init-release.outputs.tag_name }}"
+          CLEAN_VER="${CLEAN_VER#v}"
+          npm pkg set version="$CLEAN_VER" --workspace=@getpaseo/desktop
+
+      - name: Build Windows x64 installer and zip
+        env:
+          PASEO_DESKTOP_SMOKE_ARTIFACT_DIR: ${{ runner.temp }}/desktop-smoke
+          FORK_OWNER: ${{ github.repository_owner }}
+        run: npm run build:desktop -- --publish never --win --x64 "-c.publish.owner=$env:FORK_OWNER" "-c.publish.repo=paseo" "-c.publish.channel=latest" "-c.publish.releaseType=release"
+
+      - name: Upload Windows artifacts to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.init-release.outputs.tag_name }}
+          files: |
+            packages/desktop/release/*.exe
+            packages/desktop/release/*.zip
+            packages/desktop/release/*.blockmap
+            packages/desktop/release/latest.yml
+
+  build-docker-images:
+    needs: init-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: paseo-host-sync
+            context: docker/host-sync
+            file: docker/host-sync/Dockerfile
+          - name: paseo-web
+            context: .
+            file: docker/host-sync/Web.Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve image tags
+        id: meta
+        env:
+          OWNER: ${{ github.repository_owner }}
+          NAME: ${{ matrix.name }}
+          TAG: ${{ needs.init-release.outputs.tag_name }}
+        run: |
+          IMAGE_NAME="ghcr.io/${OWNER,,}/${NAME}"
+          echo "image=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ needs.init-release.outputs.tag_name }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max

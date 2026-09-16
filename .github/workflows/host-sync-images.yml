@@ -2,7 +2,7 @@ name: Host Sync Images
 
 on:
   push:
-    branches: [codex/host-sync]
+    branches: [main]
     paths:
       - "packages/**"
       - "docker/host-sync/**"

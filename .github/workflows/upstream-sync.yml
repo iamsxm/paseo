@@ -1,24 +1,89 @@
-name: Sync upstream
+name: Sync Upstream (PR)
+
 on:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: "30 2 * * *" # 每天 UTC 02:30 自动检查一次
   workflow_dispatch:
+
 permissions:
   contents: write
+  pull-requests: write
+  workflows: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: true
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout target branch
+        uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Merge official upstream
+
+      - name: Setup Git user
         run: |
-          git remote add upstream https://github.com/getpaseo/paseo.git || true
-          git fetch upstream --prune
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout codex/host-sync
-          git merge --no-edit upstream/main
-          git push origin HEAD:codex/host-sync
+
+      - name: Check upstream changes
+        id: check_upstream
+        run: |
+          git remote add upstream https://github.com/getpaseo/paseo.git || true
+          git fetch upstream main --prune
+          
+          BEHIND_COUNT=$(git rev-list --count HEAD..upstream/main)
+          echo "behind_count=$BEHIND_COUNT" >> "$GITHUB_OUTPUT"
+          
+          if [ "$BEHIND_COUNT" -eq 0 ]; then
+            echo "Already up to date with official upstream."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found $BEHIND_COUNT new commits from upstream."
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Attempt merge on sync branch
+        if: steps.check_upstream.outputs.has_changes == 'true'
+        id: merge_attempt
+        run: |
+          BRANCH_NAME="sync/upstream-main"
+          git checkout -B "$BRANCH_NAME"
+          
+          if git merge upstream/main --no-edit; then
+            echo "has_conflicts=false" >> "$GITHUB_OUTPUT"
+            echo "conflict_files=" >> "$GITHUB_OUTPUT"
+            echo "Merge succeeded cleanly."
+          else
+            echo "has_conflicts=true" >> "$GITHUB_OUTPUT"
+            CONFLICTS=$(git diff --name-only --diff-filter=U | tr '\n' ' ')
+            echo "conflict_files=$CONFLICTS" >> "$GITHUB_OUTPUT"
+            echo "Merge has conflicts in: $CONFLICTS"
+            git commit -am "chore: conflict resolution required while syncing upstream/main" || true
+          fi
+
+      - name: Create or update Pull Request
+        if: steps.check_upstream.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sync/upstream-main
+          base: main
+          title: "chore: sync official upstream (${{ steps.check_upstream.outputs.behind_count }} commits)"
+          body: |
+            ### 🤖 上游同步机器人通知
+
+            检测到官方上游仓库 (`getpaseo/paseo:main`) 存在更新。
+
+            - **上游新增提交数**：${{ steps.check_upstream.outputs.behind_count }}
+            - **目标分支**：`main`
+            - **合并状态**：${{ steps.merge_attempt.outputs.has_conflicts == 'true' && '⚠️ **存在冲突，需要人工介入**' || '✅ **无冲突，可直接合并**' }}
+
+            ${{ steps.merge_attempt.outputs.has_conflicts == 'true' && format('#### 冲突文件列表：\n```\n{0}\n```\n请在本地拉取分支 `sync/upstream-main` 解决冲突后推送到本 PR。', steps.merge_attempt.outputs.conflict_files) || '所有修改已自动合并，检查 CI 通过后可点击 Merge。' }}
+          labels: |
+            upstream-sync
+            automated-pr
