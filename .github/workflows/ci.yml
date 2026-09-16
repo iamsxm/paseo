@@ -58,7 +58,7 @@ jobs:
   format:
     name: format
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.format != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.format != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +77,7 @@ jobs:
   lint:
     name: lint
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.quality != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.quality != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
   typecheck:
     name: typecheck
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.quality != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.quality != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,7 +130,7 @@ jobs:
   server-tests-ubuntu:
     name: server-tests (ubuntu-latest)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.server != 'false' || needs.changes.outputs.hub != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.server != 'false' || needs.changes.outputs.hub != 'false') }}
     runs-on: ubuntu-latest
     steps: &server_test_steps
       - uses: actions/checkout@v4
@@ -171,14 +171,14 @@ jobs:
   server-tests-windows:
     name: server-tests (windows-latest)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.server != 'false' || needs.changes.outputs.hub != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.server != 'false' || needs.changes.outputs.hub != 'false') }}
     runs-on: windows-latest
     steps: *server_test_steps
 
   desktop-tests-ubuntu:
     name: desktop-tests (ubuntu-latest)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.desktop != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.desktop != 'false') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -220,7 +220,7 @@ jobs:
 
       - name: Upload desktop lifecycle screenshots
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && runner.os == 'Linux' }}
         with:
           name: desktop-lifecycle
           path: ${{ runner.temp }}/desktop-lifecycle
@@ -253,7 +253,7 @@ jobs:
   desktop-tests-windows:
     name: desktop-tests (windows-latest)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.desktop != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.desktop != 'false') }}
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -263,7 +263,7 @@ jobs:
   app-tests:
     name: app-tests
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.app != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.app != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -289,7 +289,7 @@ jobs:
   sdk-tests:
     name: sdk-tests
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.sdk != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.sdk != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -326,7 +326,7 @@ jobs:
   playwright-1:
     name: playwright (shard 1/4)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_SHARD: "1/4"
@@ -376,7 +376,7 @@ jobs:
   playwright-2:
     name: playwright (shard 2/4)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_SHARD: "2/4"
@@ -386,7 +386,7 @@ jobs:
   playwright-3:
     name: playwright (shard 3/4)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_SHARD: "3/4"
@@ -396,7 +396,7 @@ jobs:
   playwright-4:
     name: playwright (shard 4/4)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.browser != 'false') }}
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_SHARD: "4/4"
@@ -406,7 +406,7 @@ jobs:
   relay-tests:
     name: relay-tests
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.relay != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.relay != 'false') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -428,7 +428,7 @@ jobs:
   cli-tests-1:
     name: cli-tests (shard 1/3)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.cli != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.cli != 'false') }}
     runs-on: ubuntu-latest
     env:
       PASEO_LOCAL_SPEECH_AUTO_DOWNLOAD: "0"
@@ -463,7 +463,7 @@ jobs:
   cli-tests-2:
     name: cli-tests (shard 2/3)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.cli != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.cli != 'false') }}
     runs-on: ubuntu-latest
     env:
       PASEO_LOCAL_SPEECH_AUTO_DOWNLOAD: "0"
@@ -476,7 +476,7 @@ jobs:
   cli-tests-3:
     name: cli-tests (shard 3/3)
     needs: changes
-    if: ${{ !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.cli != 'false') }}
+    if: ${{ github.repository == 'getpaseo/paseo' && !cancelled() && (needs.changes.outputs.full != 'false' || needs.changes.outputs.cli != 'false') }}
     runs-on: ubuntu-latest
     env:
       PASEO_LOCAL_SPEECH_AUTO_DOWNLOAD: "0"
