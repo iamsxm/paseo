@@ -167,5 +167,3 @@ npm run lint -- packages/app/src/host-sync docker/host-sync/host-sync.test.ts
 入口只控制客户端页面，数据访问仍由 PocketBase 账号权限校验。不要用入口遮挡代替 API 鉴权。生产部署可在入口验收通过后撤掉临时 Basic Auth，避免用户需要两套密码。后台管理页可保留独立访问保护。
 
 Windows 专用工作流支持 `fork-windows-v*` 标签，成功构建后上传 exe、zip、blockmap 和 latest.yml 到同名 Release。该标签前缀避免触发官方全平台发布任务。当前桌面包版本为 0.8.1，安装包未签名。手动 workflow_dispatch 仅生成 Actions artifacts。
-
-Sync upstream 每天把官方 main 合并到 fork 当前默认分支；冲突会使任务失败且不推送，不覆盖定制代码。由于官方更新可能包含 `.github/workflows/*`，工作流使用仓库 Secret `UPSTREAM_SYNC_TOKEN` 推送同步分支。该 fine-grained token 需要 Contents、Workflows、Pull requests 写权限。自动合并不等于自动部署。
