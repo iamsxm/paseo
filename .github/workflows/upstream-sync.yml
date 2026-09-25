@@ -17,12 +17,21 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Check sync token
+        env:
+          UPSTREAM_SYNC_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN }}
+        run: |
+          if [ -z "$UPSTREAM_SYNC_TOKEN" ]; then
+            echo "UPSTREAM_SYNC_TOKEN is not configured. Add a fine-grained token with Contents, Workflows, and Pull requests write permissions."
+            exit 1
+          fi
+
       - name: Checkout target branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.UPSTREAM_SYNC_TOKEN }}
 
       - name: Setup Git user
         run: |
@@ -31,13 +40,14 @@ jobs:
 
       - name: Check and sync upstream
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           git remote add upstream https://github.com/getpaseo/paseo.git || true
           git fetch upstream main --prune
 
           BEHIND_COUNT=$(git rev-list --count HEAD..upstream/main)
-          echo "Upstream has $BEHIND_COUNT commits ahead of main."
+          echo "Upstream has $BEHIND_COUNT commits ahead of $TARGET_BRANCH."
 
           if [ "$BEHIND_COUNT" -eq 0 ]; then
             echo "Already up to date with official upstream."
@@ -45,7 +55,7 @@ jobs:
           fi
 
           BRANCH_NAME="sync/upstream-main"
-          git checkout -B "$BRANCH_NAME"
+          git checkout -B "$BRANCH_NAME" "$TARGET_BRANCH"
 
           HAS_CONFLICTS=false
           if git merge upstream/main --no-edit; then
@@ -66,7 +76,7 @@ jobs:
             echo "检测到官方上游仓库 (\`getpaseo/paseo:main\`) 存在更新，自动合并时发现冲突：" >> pr_body.md
             echo "" >> pr_body.md
             echo "- **上游新增提交数**：${BEHIND_COUNT}" >> pr_body.md
-            echo "- **目标分支**：\`main\`" >> pr_body.md
+            echo "- **目标分支**：\`$TARGET_BRANCH\`" >> pr_body.md
             echo "- **冲突文件**：" >> pr_body.md
             echo '```' >> pr_body.md
             echo "$CONFLICTS" >> pr_body.md
@@ -80,14 +90,14 @@ jobs:
             echo "检测到官方上游仓库 (\`getpaseo/paseo:main\`) 存在更新。" >> pr_body.md
             echo "" >> pr_body.md
             echo "- **上游新增提交数**：${BEHIND_COUNT}" >> pr_body.md
-            echo "- **目标分支**：\`main\`" >> pr_body.md
+            echo "- **目标分支**：\`$TARGET_BRANCH\`" >> pr_body.md
             echo "- **合并状态**：✅ 无冲突，可直接合入" >> pr_body.md
             echo "" >> pr_body.md
             echo "所有修改已自动合并无冲突。" >> pr_body.md
           fi
 
           gh pr create \
-            --base main \
+            --base "$TARGET_BRANCH" \
             --head "$BRANCH_NAME" \
             --title "$PR_TITLE" \
             --body-file pr_body.md || {
