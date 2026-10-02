@@ -58,9 +58,8 @@ describe("VPS host synchronization", () => {
 
   it("does not upload passwords or local-only hosts", () => {
     const hosts = mergeRelayHosts([], [record]);
-    hosts[0].connections = [
-      { type: "directTcp", id: "direct", endpoint: "localhost:6767", password: "device-only" },
-    ];
+    hosts[0].password = "device-only";
+    hosts[0].connections = [{ type: "directTcp", id: "direct", endpoint: "localhost:6767" }];
     expect(captureChanges(emptyCheckpoint(), hosts)).toEqual([]);
   });
 

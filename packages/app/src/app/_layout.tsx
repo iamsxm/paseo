@@ -5,12 +5,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { PortalProvider } from "@gorhom/portal";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
-import {
-  Stack,
-  useNavigationContainerRef,
-  usePathname,
-  useRouter,
-} from "expo-router";
+import { Stack, useNavigationContainerRef, usePathname, useRouter } from "expo-router";
 import {
   createContext,
   type ReactNode,
@@ -23,10 +18,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { AppState, useWindowDimensions, View } from "react-native";
-import {
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
+import { GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { AppearanceProvider } from "@/appearance/provider";
@@ -55,6 +47,7 @@ import { WorkspaceSetupDialog } from "@/components/workspace-setup-dialog";
 import { WorkspaceShortcutTargetsSubscriber } from "@/components/workspace-shortcut-targets-subscriber";
 import { FloatingPanelPortalHost } from "@/components/ui/floating-panel-portal";
 import { HostChooserModal, useHostChooser } from "@/hosts/host-chooser";
+import { HostConfirmationSheet } from "@/hosts/host-confirmation-sheet";
 import {
   getIsElectronRuntime,
   HEADER_INNER_HEIGHT,
@@ -104,10 +97,7 @@ import { useOpenProject } from "@/hooks/use-open-project";
 import { useAppSettings } from "@/hooks/use-settings";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { useOpenAgentListGesture } from "@/mobile-panels/gestures";
-import {
-  MobilePanelsProvider,
-  useIsMobilePanelActive,
-} from "@/mobile-panels/provider";
+import { MobilePanelsProvider, useIsMobilePanelActive } from "@/mobile-panels/provider";
 import {
   KeyboardActionDispatcherProvider,
   useKeyboardActionDispatcher,
@@ -118,7 +108,6 @@ import {
   getHostRuntimeStore,
   hasConfiguredLocalDaemonOverride,
   useHostRegistryLoaded,
-  useHostMutations,
   useHostRuntimeClient,
   useHostRuntimeIsConnected,
   useHosts,
@@ -141,10 +130,7 @@ import {
   parseHostWorkspaceRouteFromPathname,
   parseServerIdFromPathname,
 } from "@/utils/host-routes";
-import {
-  buildNotificationRoute,
-  resolveNotificationTarget,
-} from "@/utils/notification-routing";
+import { buildNotificationRoute, resolveNotificationTarget } from "@/utils/notification-routing";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import { PluginCatalogSync } from "@/plugins";
 import {
@@ -175,20 +161,18 @@ const HostRuntimeBootstrapContext = createContext<HostRuntimeBootstrapState>({
 function PushNotificationRouter() {
   const router = useRouter();
   const lastHandledIdRef = useRef<string | null>(null);
-  const openNotification = useStableEvent(
-    (data: Record<string, unknown> | undefined) => {
-      const target = resolveNotificationTarget(data);
-      const serverId = target.serverId;
-      const workspaceId = target.workspaceId;
-      const agentId = target.agentId;
-      if (serverId && workspaceId && agentId) {
-        navigateToAgent({ serverId, workspaceId, agentId, pin: true });
-        return;
-      }
-
-      router.navigate(buildNotificationRoute(data));
+  const openNotification = useStableEvent((data: Record<string, unknown> | undefined) => {
+    const target = resolveNotificationTarget(data);
+    const serverId = target.serverId;
+    const workspaceId = target.workspaceId;
+    const agentId = target.agentId;
+    if (serverId && workspaceId && agentId) {
+      navigateToAgent({ serverId, workspaceId, agentId, pin: true });
+      return;
     }
-  );
+
+    router.navigate(buildNotificationRoute(data));
+  });
 
   useEffect(() => {
     if (isWeb) {
@@ -210,7 +194,7 @@ function PushNotificationRouter() {
                 ? (payload as { data: Record<string, unknown> }).data
                 : undefined;
             openNotification(data);
-          }
+          },
         );
 
         void Promise.resolve(unlistenResult).then((unlisten) => {
@@ -232,18 +216,12 @@ function PushNotificationRouter() {
         openNotification(customEvent.detail?.data);
       };
 
-      window.addEventListener(
-        WEB_NOTIFICATION_CLICK_EVENT,
-        openFromWebClick as EventListener
-      );
+      window.addEventListener(WEB_NOTIFICATION_CLICK_EVENT, openFromWebClick as EventListener);
 
       return () => {
         cancelled = true;
         removeDesktopNotificationListener?.();
-        window.removeEventListener(
-          WEB_NOTIFICATION_CLICK_EVENT,
-          openFromWebClick as EventListener
-        );
+        window.removeEventListener(WEB_NOTIFICATION_CLICK_EVENT, openFromWebClick as EventListener);
       };
     }
 
@@ -271,8 +249,7 @@ function PushNotificationRouter() {
       openNotification(data);
     };
 
-    const subscription =
-      Notifications.addNotificationResponseReceivedListener(openFromResponse);
+    const subscription = Notifications.addNotificationResponseReceivedListener(openFromResponse);
 
     void Notifications.getLastNotificationResponseAsync().then((response) => {
       if (response) {
@@ -297,15 +274,8 @@ function ManagedDaemonSession({ daemon }: { daemon: HostProfile }) {
   }
 
   return (
-    <SessionProvider
-      key={daemon.serverId}
-      serverId={daemon.serverId}
-      client={client}
-    >
-      <LegacyFavoriteProfileMigrationBootstrap
-        serverId={daemon.serverId}
-        client={client}
-      />
+    <SessionProvider key={daemon.serverId} serverId={daemon.serverId} client={client}>
+      <LegacyFavoriteProfileMigrationBootstrap serverId={daemon.serverId} client={client} />
       <PluginCatalogSync serverId={daemon.serverId} client={client} />
     </SessionProvider>
   );
@@ -318,23 +288,16 @@ function LegacyFavoriteProfileMigrationBootstrap({
   serverId: string;
   client: NonNullable<ReturnType<typeof useHostRuntimeClient>>;
 }) {
-  const serverInfo = useSessionStore(
-    (state) => state.sessions[serverId]?.serverInfo ?? null
-  );
+  const serverInfo = useSessionStore((state) => state.sessions[serverId]?.serverInfo ?? null);
   const isConnected = useHostRuntimeIsConnected(serverId);
 
   useEffect(() => {
     if (!serverInfo || !isConnected) {
       return;
     }
-    void legacyFavoriteProfileMigration
-      .migrateHost(serverId, client)
-      .catch((error) => {
-        console.warn(
-          "[AgentProfiles] Failed to migrate legacy favourites",
-          error
-        );
-      });
+    void legacyFavoriteProfileMigration.migrateHost(serverId, client).catch((error) => {
+      console.warn("[AgentProfiles] Failed to migrate legacy favourites", error);
+    });
   }, [client, isConnected, serverId, serverInfo]);
 
   return null;
@@ -367,12 +330,12 @@ export function useEarliestOnlineHostServerId(): string | null {
         unsubscribeHostList();
       };
     },
-    [store]
+    [store],
   );
   return useSyncExternalStore(
     subscribe,
     () => store.getEarliestOnlineHostServerId(),
-    () => store.getEarliestOnlineHostServerId()
+    () => store.getEarliestOnlineHostServerId(),
   );
 }
 
@@ -381,7 +344,7 @@ function useDaemonStartLastError(): string | null {
   return useSyncExternalStore(
     (listener) => service.subscribe(listener),
     () => service.getLastError(),
-    () => service.getLastError()
+    () => service.getLastError(),
   );
 }
 
@@ -390,7 +353,7 @@ function useDaemonStartIsRunning(): boolean {
   return useSyncExternalStore(
     (listener) => service.subscribe(listener),
     () => service.isRunning(),
-    () => service.isRunning()
+    () => service.isRunning(),
   );
 }
 
@@ -438,8 +401,7 @@ function HostRuntimeBootstrapProvider({ children }: { children: ReactNode }) {
   const anyOnlineHostServerId = useEarliestOnlineHostServerId();
   const daemonStartError = useDaemonStartLastError();
   const daemonStartIsRunning = useDaemonStartIsRunning();
-  const [hasGivenUpWaitingForHost, setHasGivenUpWaitingForHost] =
-    useState(false);
+  const [hasGivenUpWaitingForHost, setHasGivenUpWaitingForHost] = useState(false);
   const isDesktopRuntime = shouldUseDesktopDaemon();
   const startupBlocker = useMemo(
     () =>
@@ -449,12 +411,7 @@ function HostRuntimeBootstrapProvider({ children }: { children: ReactNode }) {
         daemonStartIsRunning,
         daemonStartError,
       }),
-    [
-      anyOnlineHostServerId,
-      daemonStartError,
-      daemonStartIsRunning,
-      isDesktopRuntime,
-    ]
+    [anyOnlineHostServerId, daemonStartError, daemonStartIsRunning, isDesktopRuntime],
   );
   const shouldRunGiveUpTimer = shouldRunStartupGiveUpTimer({
     startupBlocker,
@@ -484,9 +441,7 @@ function HostRuntimeBootstrapProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const splashError =
-    startupBlocker.kind === "managed-daemon-error"
-      ? startupBlocker.message
-      : null;
+    startupBlocker.kind === "managed-daemon-error" ? startupBlocker.message : null;
   const storeReady = resolveStartupNavigationReady({ startupBlocker });
 
   const state = useMemo<HostRuntimeBootstrapState>(
@@ -497,7 +452,7 @@ function HostRuntimeBootstrapProvider({ children }: { children: ReactNode }) {
       storeReady,
       startupBlocker,
     }),
-    [splashError, retry, hasGivenUpWaitingForHost, storeReady, startupBlocker]
+    [splashError, retry, hasGivenUpWaitingForHost, storeReady, startupBlocker],
   );
 
   return (
@@ -526,26 +481,15 @@ interface AppContainerProps {
 
 const WINDOW_SIDEBAR_TOGGLE_HORIZONTAL_PADDING = 12;
 
-function AppContainer({
-  children,
-  chromeEnabled: chromeEnabledOverride,
-}: AppContainerProps) {
+function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppContainerProps) {
   const keyboardActionDispatcher = useKeyboardActionDispatcher();
   const daemons = useHosts();
   const { settings, updateSettings } = useAppSettings();
-  const toggleMobileAgentList = usePanelStore(
-    (state) => state.toggleMobileAgentList
-  );
-  const toggleDesktopAgentList = usePanelStore(
-    (state) => state.toggleDesktopAgentList
-  );
+  const toggleMobileAgentList = usePanelStore((state) => state.toggleMobileAgentList);
+  const toggleDesktopAgentList = usePanelStore((state) => state.toggleDesktopAgentList);
   const exitFocusMode = usePanelStore((state) => state.exitFocusMode);
-  const isFocusModeEnabled = usePanelStore(
-    (state) => state.desktop.focusModeEnabled
-  );
-  const isDesktopAgentListOpen = usePanelStore(
-    (state) => state.desktop.agentListOpen
-  );
+  const isFocusModeEnabled = usePanelStore((state) => state.desktop.focusModeEnabled);
+  const isDesktopAgentListOpen = usePanelStore((state) => state.desktop.agentListOpen);
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const { width: viewportWidth } = useWindowDimensions();
 
@@ -560,14 +504,11 @@ function AppContainer({
   const usesCompactExplorerHost = explorerSidebarPresentation !== "pane";
   useCompactWebViewportZoomLock(isCompactLayout);
   const pathname = usePathname();
-  const isWorkspaceRoute =
-    parseHostWorkspaceRouteFromPathname(pathname) !== null;
+  const isWorkspaceRoute = parseHostWorkspaceRouteFromPathname(pathname) !== null;
   const isWorkspaceFocusModeEnabled = isWorkspaceRoute && isFocusModeEnabled;
   const chromeEnabled = chromeEnabledOverride ?? daemons.length > 0;
   const hasMountedDesktopSidebar = useLatchedBoolean(chromeEnabled);
-  const toggleAgentList = isCompactLayout
-    ? toggleMobileAgentList
-    : toggleDesktopAgentList;
+  const toggleAgentList = isCompactLayout ? toggleMobileAgentList : toggleDesktopAgentList;
   const toggleDesktopSidebars = useCallback(() => {
     // The focused workspace owns its layout key, its checkout, and therefore the
     // only correct answer to "is the explorer open". Let it decide when there is
@@ -588,8 +529,7 @@ function AppContainer({
   // conflate workspace/project-specific chrome (sidebar, mobile gesture) with
   // global concerns like keyboard shortcuts. Split those out so settings (and
   // other non-workspace routes) don't need a special-case to keep shortcuts alive.
-  const keyboardShortcutsEnabled =
-    chromeEnabled || pathname.startsWith("/settings");
+  const keyboardShortcutsEnabled = chromeEnabled || pathname.startsWith("/settings");
 
   useKeyboardShortcuts({
     enabled: keyboardShortcutsEnabled,
@@ -607,8 +547,7 @@ function AppContainer({
   const appContentMinimumWidth = resolveDesktopAppContentMinimum({
     isSettingsRoute: pathname.includes("/settings"),
   });
-  const desktopSidebarMounted =
-    hasMountedDesktopSidebar && !isWorkspaceFocusModeEnabled;
+  const desktopSidebarMounted = hasMountedDesktopSidebar && !isWorkspaceFocusModeEnabled;
   const desktopSidebarVisible = resolveDesktopSidebarVisibility({
     chromeEnabled,
     isCompactLayout,
@@ -635,9 +574,7 @@ function AppContainer({
   );
   let themedSidebarChrome = sidebarChrome;
   if (isWeb) {
-    themedSidebarChrome = (
-      <AppearanceStyleBoundary>{sidebarChrome}</AppearanceStyleBoundary>
-    );
+    themedSidebarChrome = <AppearanceStyleBoundary>{sidebarChrome}</AppearanceStyleBoundary>;
   }
   const workspaceChrome = (
     <View style={rowStyle}>
@@ -649,13 +586,9 @@ function AppContainer({
       {usesCompactExplorerHost ? (
         <CompactExplorerSidebarHost
           enabled={chromeEnabled}
-          presentation={
-            explorerSidebarPresentation === "dock" ? "dock" : "overlay"
-          }
+          presentation={explorerSidebarPresentation === "dock" ? "dock" : "overlay"}
         >
-          <WindowChromeRegion
-            corners={chromeEnabled ? "both" : appChromeLayout.contentCorners}
-          >
+          <WindowChromeRegion corners={chromeEnabled ? "both" : appChromeLayout.contentCorners}>
             <View style={flexStyle}>{children}</View>
           </WindowChromeRegion>
         </CompactExplorerSidebarHost>
@@ -703,6 +636,7 @@ function AppContainer({
         <CommandCenter />
         <AddProjectFlowHost />
         <HostChooserModal />
+        <HostConfirmationSheet />
         <ProviderSettingsHost />
         <WorkspaceSetupDialog />
         <KeyboardShortcutsDialog />
@@ -714,9 +648,7 @@ function AppContainer({
   );
 
   const content = isCompactLayout ? (
-    <MobileGestureWrapper chromeEnabled={chromeEnabled}>
-      {surface}
-    </MobileGestureWrapper>
+    <MobileGestureWrapper chromeEnabled={chromeEnabled}>{surface}</MobileGestureWrapper>
   ) : (
     surface
   );
@@ -755,10 +687,7 @@ function MobileGestureWrapper({
   const openGesture = useOpenAgentListGesture(chromeEnabled);
 
   return (
-    <GestureDetector
-      gesture={openGesture}
-      touchAction={MOBILE_WEB_GESTURE_TOUCH_ACTION}
-    >
+    <GestureDetector gesture={openGesture} touchAction={MOBILE_WEB_GESTURE_TOUCH_ACTION}>
       <View collapsable={false} style={layoutStyles.surfaceFill}>
         {children}
       </View>
@@ -767,15 +696,11 @@ function MobileGestureWrapper({
 }
 
 function ProvidersWrapper({ children }: { children: ReactNode }) {
-  const { upsertConnectionFromOfferUrl } = useHostMutations();
-
   return (
     <AppearanceProvider>
       <VoiceProvider>
         <DesktopWindowControlsSync />
-        <OfferLinkListener
-          upsertDaemonFromOfferUrl={upsertConnectionFromOfferUrl}
-        />
+        <OfferLinkListener />
         <HostSessionManager />
         <FaviconStatusSync />
         {children}
@@ -795,55 +720,43 @@ function DesktopWindowControlsSync() {
       backgroundColor: surface0,
       trafficLightOffsetY: -4,
     }).catch((error) => {
-      console.warn(
-        "[DesktopWindow] Failed to update window controls overlay",
-        error
-      );
+      console.warn("[DesktopWindow] Failed to update window controls overlay", error);
     });
   }, [isLoading, surface0]);
 
   return null;
 }
 
-function OfferLinkListener({
-  upsertDaemonFromOfferUrl,
-}: {
-  upsertDaemonFromOfferUrl: (offerUrlOrFragment: string) => Promise<unknown>;
-}) {
+function OfferLinkListener() {
   const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
-    const handleUrl = (url: string | null) => {
+    const handleUrl = async (url: string | null) => {
       if (!url) return;
-      if (!url.includes("#offer=")) return;
-      void upsertDaemonFromOfferUrl(url)
-        .then((profile) => {
-          if (cancelled) return;
-          const serverId = (profile as { serverId?: unknown } | null)?.serverId;
-          if (typeof serverId !== "string" || !serverId) return;
-          router.replace(buildOpenProjectRoute());
-          return;
-        })
-        .catch((error) => {
-          if (cancelled) return;
-          console.warn("[Linking] Failed to import pairing offer", error);
-        });
+      if (!url.includes("#offer=") && !url.includes("#connect=") && !url.startsWith("relay://"))
+        return;
+      try {
+        const result = await getHostRuntimeStore().importConnectionLink(url, "openProject");
+        if (!cancelled && result.status === "connected") router.replace(buildOpenProjectRoute());
+      } catch (error) {
+        console.warn("[OfferLinkListener] Pairing link failed", error);
+      }
     };
 
     void Linking.getInitialURL()
-      .then(handleUrl)
+      .then((url) => handleUrl(url))
       .catch(() => undefined);
 
     const subscription = Linking.addEventListener("url", (event) => {
-      handleUrl(event.url);
+      void handleUrl(event.url);
     });
 
     return () => {
       cancelled = true;
       subscription.remove();
     };
-  }, [router, upsertDaemonFromOfferUrl]);
+  }, [router]);
 
   return null;
 }
@@ -863,9 +776,7 @@ let nextOpenProjectRequestId = 1;
 function OpenProjectListener() {
   const chooseHost = useHostChooser();
   const hostRegistryLoaded = useHostRegistryLoaded();
-  const [request, setRequest] = useState<PendingOpenProjectRequest | null>(
-    null
-  );
+  const [request, setRequest] = useState<PendingOpenProjectRequest | null>(null);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const openProject = useOpenProject(request?.serverId ?? null);
 
@@ -892,7 +803,7 @@ function OpenProjectListener() {
         },
       });
     },
-    [chooseHost, hostRegistryLoaded]
+    [chooseHost, hostRegistryLoaded],
   );
 
   useEffect(() => {
@@ -941,17 +852,13 @@ function OpenProjectListener() {
       .catch(() => undefined);
 
     // Listen for hot-start paths relayed via the second-instance event.
-    void listenToDesktopEvent<OpenProjectEventPayload>(
-      "open-project",
-      (payload) => {
-        if (disposed) {
-          return;
-        }
-        const nextPath =
-          typeof payload?.path === "string" ? payload.path.trim() : "";
-        openPathOnChosenHost(nextPath);
+    void listenToDesktopEvent<OpenProjectEventPayload>("open-project", (payload) => {
+      if (disposed) {
+        return;
       }
-    )
+      const nextPath = typeof payload?.path === "string" ? payload.path.trim() : "";
+      openPathOnChosenHost(nextPath);
+    })
       .then((dispose) => {
         if (disposed) {
           dispose();
@@ -975,24 +882,19 @@ function AppWithSidebar({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hosts = useHosts();
   const storeReady = useStoreReady();
-  const routeServerId = useMemo(
-    () => parseServerIdFromPathname(pathname),
-    [pathname]
-  );
+  const routeServerId = useMemo(() => parseServerIdFromPathname(pathname), [pathname]);
   const routeHasKnownHost =
-    routeServerId !== null &&
-    hosts.some((host) => host.serverId === routeServerId);
+    routeServerId !== null && hosts.some((host) => host.serverId === routeServerId);
   const shouldShowAppChrome =
     storeReady &&
     (pathname === "/open-project" ||
       pathname === "/new" ||
       pathname === "/sessions" ||
       pathname === "/schedules" ||
+      pathname === "/usage" ||
       routeHasKnownHost);
 
-  return (
-    <AppContainer chromeEnabled={shouldShowAppChrome}>{children}</AppContainer>
-  );
+  return <AppContainer chromeEnabled={shouldShowAppChrome}>{children}</AppContainer>;
 }
 
 function FaviconStatusSync() {
@@ -1022,6 +924,7 @@ function RootStack() {
         <Stack.Screen name="open-project" />
         <Stack.Screen name="sessions" />
         <Stack.Screen name="schedules" />
+        <Stack.Screen name="usage" />
         <Stack.Screen name="pair-scan" />
       </Stack.Protected>
       <Stack.Screen name="h/[serverId]" />
