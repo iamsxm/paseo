@@ -922,6 +922,16 @@ function RootProviders({ children }: { children: ReactNode }) {
   );
 }
 
+// 官方新增 LucideProvider 与 AddHostProvider 后，根树再嵌一层就会超过
+// jsx-max-depth 的 6 层上限，所以把登录门禁与应用外壳收成一个组件。
+function LoginGatedAppShell() {
+  return (
+    <HostSyncLoginGate>
+      <AppShell />
+    </HostSyncLoginGate>
+  );
+}
+
 function RootAppTree() {
   return (
     <GestureHandlerRootView style={flexStyle}>
@@ -930,9 +940,7 @@ function RootAppTree() {
           <AddHostProvider>
             <RootProviders>
               <RuntimeProviders>
-                <HostSyncLoginGate>
-                  <AppShell />
-                </HostSyncLoginGate>
+                <LoginGatedAppShell />
               </RuntimeProviders>
             </RootProviders>
           </AddHostProvider>
